@@ -61,7 +61,15 @@ $WshShell = New-Object -ComObject WScript.Shell
 $DesktopPath = [System.IO.Path]::Combine([System.Environment]::GetFolderPath("Desktop"))
 $Shortcut = $WshShell.CreateShortcut("$DesktopPath\$shortcutName.lnk")
 $Shortcut.TargetPath = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
-$Shortcut.Arguments = "--app=`"$url`""
+
+# Automatically handle command line options for Edge
+$EnableBrowserFeatures = $true  # Set this to $false if you want to disable browser features
+if ($EnableBrowserFeatures) {
+    $Shortcut.Arguments = "--new-window `"$url`""
+} else {
+    $Shortcut.Arguments = "--app=`"$url`""
+}
+
 $Shortcut.WorkingDirectory = "C:\Program Files (x86)\Microsoft\Edge\Application"
 
 # Set icon if favicon was found

@@ -5,6 +5,18 @@ function Is-ValidUrl {
     return ($Uri.AbsoluteUri -ne $null -and $Uri.Scheme -match '^https?$')
 }
 
+# Function to get webpage title
+function Get-WebpageTitle {
+    param ([string]$Url)
+    try {
+        $response = Invoke-WebRequest -Uri $Url -UseBasicParsing
+        $title = $response.ParsedHtml.title
+        return $title.Trim()
+    } catch {
+        return $null
+    }
+}
+
 # Get URL from clipboard
 $url = Get-Clipboard -Raw
 
@@ -16,20 +28,30 @@ if (-not (Is-ValidUrl $url)) {
     }
 }
 
+# Get webpage title
+$defaultName = Get-WebpageTitle $url
+if (-not $defaultName) {
+    $defaultName = ($url -replace '^https?://|www\.|\.[^.]+$') + " App"
+}
+
+# Prompt user for name, defaulting to webpage title
+$shortcutName = Read-Host "Enter a name for the shortcut (default: $defaultName)"
+if ([string]::IsNullOrWhiteSpace($shortcutName)) {
+    $shortcutName = $defaultName
+}
+
 # Create WScript.Shell object
 $WshShell = New-Object -ComObject WScript.Shell
 
 # Get desktop path
 $DesktopPath = [Environment]::GetFolderPath("Desktop")
 
-# Generate shortcut name from URL
-$ShortcutName = ($url -replace '^https?://|www\.|\.[^.]+$') + " App"
-
 # Create shortcut
-$Shortcut = $WshShell.CreateShortcut("$DesktopPath\$ShortcutName.lnk")
+$Shortcut = $WshShell.CreateShortcut("$DesktopPath\$shortcutName.lnk")
 $Shortcut.TargetPath = "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe"
 $Shortcut.Arguments = "--app=`"$url`""
 $Shortcut.WorkingDirectory = "C:\Program Files (x86)\Microsoft\Edge\Application"
 $Shortcut.Save()
 
-Write-Host "Shortcut created: $ShortcutName"
+Write-Host "Shortcut created: $shortcutName"
+
